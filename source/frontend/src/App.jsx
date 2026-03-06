@@ -11,14 +11,32 @@ import Dashboard from "./components/dashboard/Dashboard";
 import ActuatorPanel from "./components/actuators/ActuatorPanel";
 import RuleManager from "./components/rules/RuleManager";
 import EventLog from "./components/events/EventLog";
+import LoadingScreen from "./components/loading/LoadingScreen";
+import { useState, useEffect} from 'react';
+
+
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 10500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
 
       {/* Main Layout */}
-      <div className="flex min-h-screen bg-red-600 text-white">
+      <div className="flex min-h-screen bg-background text-white">
 
         {/* Sidebar */}
         <Sidebar />

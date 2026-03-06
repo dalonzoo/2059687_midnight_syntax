@@ -3,7 +3,10 @@
 @theme {
   --color-border: hsl(var(--border));
   --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+
+  --color-sub: hsl(var(--sub));
+
+  --color-button: hsl(var(--button));
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
@@ -24,8 +27,8 @@
 @layer base {
   :root {
     /* Core app colors */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 95%;
+    --background: 253, 31%, 12%;
+    --sub: 346, 95%, 29%;
 
     /* Surfaces */
     --card: 0 0% 12%;
@@ -35,15 +38,17 @@
     --border: 0 0% 20%;
 
     /* Brand */
-    --primary: 21 100% 45%;
+    --primary: 321, 46%, 16%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 40 100% 50%;
     --secondary-foreground: 0 0% 10%;
 
     /* Status */
-    --success: 123 38% 57%;
-    --warning: 36 100% 57%;
+    --success: 142, 70%, 45%;
+    --warning: 0, 75%, 55%;
+
+    --button: 321, 46%, 16%;
 
     /* Utility neutrals */
     --muted: 0 0% 16%;

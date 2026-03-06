@@ -3,8 +3,7 @@
  *
  * Displays a list of all rules and provides a form to create/edit them.
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { Typography, Button, Stack } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import RuleCard from './RuleCard';
 import RuleForm from './RuleForm';
@@ -12,7 +11,7 @@ import api from '../../services/api';
 
 function RuleManager() {
   const [rules, setRules] = useState([]);
-  const [editingRule, setEditingRule] = useState(null);   // null = closed, {} = new, {id:...} = edit
+  const [editingRule, setEditingRule] = useState(null); // null = closed, {} = new, {id:...} = edit
   const [showForm, setShowForm] = useState(false);
 
   /** Fetch all rules from the API. */
@@ -67,32 +66,41 @@ function RuleManager() {
 
   return (
     <>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5">Automation Rules</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => { setEditingRule({}); setShowForm(true); }}
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-semibold text-white">Automation Rules</h2>
+
+        <button
+          type="button"
+          onClick={() => {
+            setEditingRule({});
+            setShowForm(true);
+          }}
+          className="inline-flex items-center gap-2 rounded-xl bg-button px-4 py-2 text-sm font-medium 
+          text-white shadow-md transition hover:opacity-90 cursor-pointer"
         >
-          Add Rule
-        </Button>
-      </Stack>
+          <AddIcon fontSize="small" />
+          <span>Add Rule</span>
+        </button>
+      </div>
 
       {/* Rule list */}
       {rules.length === 0 ? (
-        <Typography color="text.secondary">No rules configured yet.</Typography>
+        <p className="text-sm text-muted-foreground">No rules configured yet.</p>
       ) : (
-        <Stack spacing={2}>
+        <div className="space-y-4">
           {rules.map((rule) => (
             <RuleCard
               key={rule.id}
               rule={rule}
-              onEdit={() => { setEditingRule(rule); setShowForm(true); }}
+              onEdit={() => {
+                setEditingRule(rule);
+                setShowForm(true);
+              }}
               onDelete={() => handleDelete(rule.id)}
               onToggle={() => handleToggleEnabled(rule)}
             />
           ))}
-        </Stack>
+        </div>
       )}
 
       {/* Create/Edit form dialog */}
@@ -101,7 +109,10 @@ function RuleManager() {
           open={showForm}
           rule={editingRule}
           onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditingRule(null); }}
+          onClose={() => {
+            setShowForm(false);
+            setEditingRule(null);
+          }}
         />
       )}
     </>
