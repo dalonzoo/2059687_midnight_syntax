@@ -8,127 +8,286 @@ A distributed IoT platform for managing telemetry, environmental controls, and a
 
 ---
 
+## Quick Start
+
+### Prerequisites
+- Docker Desktop running
+- The simulator OCI image: `mars-iot-simulator-oci.tar`
+
+### 1. Load the simulator image
+```bash
+docker load -i mars-iot-simulator-oci.tar
+```
+
+### 2. Start all services (backend only — skip frontend during dev)
+```bash
+cd source
+docker compose up -d zookeeper kafka postgres simulator ingestion-service processing-service dashboard-service
+```
+
+### 3. Start everything including frontend
+```bash
+cd source
+docker compose up -d
+```
+
+Dashboard UI will be accessible at **http://localhost:3000**
+
+---
+
+## Service Port Map
+
+| Service | Internal Port | External Port | Purpose |
+|---------|--------------|---------------|---------|
+| simulator | 8080 | 8080 | Mars IoT Simulator |
+| kafka | 9092 | 9092 | Message broker |
+| postgres | 5432 | 5432 | Rule database |
+| ingestion-service | 8000 | — | No external access needed |
+| processing-service | 8001 | **8001** | Rules API (direct access for testing) |
+| dashboard-service | 8002 | **8082** | API proxy + WebSocket relay |
+| frontend (nginx) | 80 | **3000** | React dashboard UI |
+
+> **Note:** `dashboard-service` is mapped to host port **8082** (port 8002 is reserved by Docker Desktop on some installations).
+
+---
+
+## Backend Testing Guide
+
+All tests can be run with standard `curl` commands or PowerShell's `Invoke-RestMethod`. Run these after `docker compose up` to verify the full pipeline is working.
+
+### Step 1 — Verify simulator is up
+
+```bash
+curl http://localhost:8080/health
+# Expected: {"status":"ok"}
+
+curl http://localhost:8080/api/sensors | python3 -m json.tool
+# Expected: list of 8 REST sensor IDs
+
+curl http://localhost:8080/api/actuators | python3 -m json.tool
+# Expected: {"cooling_fan":"OFF", "entrance_humidifier":"OFF", ...}
+```
+
+### Step 2 — Verify service health endpoints
+
+```bash
+curl http://localhost:8001/health
+# Expected: {"status":"ok","service":"processing-service"}
+
+curl http://localhost:8082/health
+# Expected: {"status":"ok","service":"dashboard-service","ws_connections":0}
+```
+
+### Step 3 — Verify sensor data is flowing through Kafka
+
+Wait ~10 seconds after startup for the ingestion service to poll all sensors and publish to Kafka.
+
+```bash
+curl http://localhost:8001/api/state | python3 -m json.tool
+# Expected: {"sensors": {"greenhouse_temperature": {...}, "co2_hall": {...}, ...}}
+# Should contain ~8 sensor entries with live values and timestamps
+```
+
+Check a single sensor:
+```bash
+curl http://localhost:8001/api/state/greenhouse_temperature | python3 -m json.tool
+# Expected: full UnifiedEvent JSON with sensor_id, measurements (temperature_c in °C), timestamp
+```
+
+### Step 4 — Verify API proxy through dashboard-service
+
+```bash
+curl http://localhost:8082/api/state | python3 -m json.tool
+# Expected: same response as above, proxied through dashboard-service
+```
+
+### Step 5 — Test automation rule CRUD
+
+Create a rule (cool if greenhouse > 20°C):
+```bash
+curl -X POST http://localhost:8001/api/rules \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sensor_name": "greenhouse_temperature",
+    "metric": "temperature_c",
+    "operator": ">",
+    "threshold": 20,
+    "unit": "C",
+    "actuator_name": "cooling_fan",
+    "actuator_state": "ON"
+  }'
+# Expected: rule object with "id": 1, "enabled": true
+```
+
+List rules:
+```bash
+curl http://localhost:8001/api/rules | python3 -m json.tool
+# Expected: list containing the rule just created
+```
+
+Update a rule:
+```bash
+curl -X PUT http://localhost:8001/api/rules/1 \
+  -H "Content-Type: application/json" \
+  -d '{"threshold": 25}'
+# Expected: updated rule object with threshold 25.0
+```
+
+Delete a rule:
+```bash
+curl -X DELETE http://localhost:8001/api/rules/1
+# Expected: HTTP 204 No Content
+```
+
+Recreate it for the next test:
+```bash
+curl -X POST http://localhost:8001/api/rules \
+  -H "Content-Type: application/json" \
+  -d '{"sensor_name":"greenhouse_temperature","metric":"temperature_c","operator":">","threshold":20,"unit":"C","actuator_name":"cooling_fan","actuator_state":"ON"}'
+```
+
+### Step 6 — Verify end-to-end rule trigger → actuator
+
+After creating the rule above (threshold 20°C, greenhouse is typically ~22–26°C), wait ~10 seconds for the next Kafka message cycle:
+
+```bash
+curl http://localhost:8080/api/actuators | python3 -m json.tool
+# Expected: "cooling_fan": "ON"  ← rule fired and commanded the simulator
+```
+
+Verify the rule also reaches the simulator via processing-service proxy:
+```bash
+curl http://localhost:8001/api/actuators | python3 -m json.tool
+# Expected: {"actuators": {"cooling_fan": "ON", ...}}
+```
+
+### Step 7 — Test rule persistence across restart
+
+```bash
+# Stop and restart the processing service
+docker compose restart processing-service
+# Wait ~5 seconds
+curl http://localhost:8001/api/rules | python3 -m json.tool
+# Expected: rules are still there (persisted in PostgreSQL)
+```
+
+### Step 8 — Test WebSocket stream (dashboard-service)
+
+Using `wscat` (Node.js tool) or a browser console:
+
+```bash
+# Install wscat if needed: npm install -g wscat
+wscat -c ws://localhost:8082/ws
+# Expected: JSON messages arriving every ~5s:
+# {"type":"sensor_update","data":{"sensor_id":"greenhouse_temperature",...}}
+```
+
+Or from a browser console (open http://localhost:8080 or any page):
+```javascript
+const ws = new WebSocket('ws://localhost:8082/ws');
+ws.onmessage = e => console.log(JSON.parse(e.data));
+// Observe sensor_update messages streaming in
+```
+
+---
+
 ## Current Build Status
 
-### Backend — `COMPLETE`
+### Backend — ✅ `COMPLETE` (Integration tested)
 
-All three Python/FastAPI microservices are fully implemented with real logic (zero stubs, zero TODOs).
+All three Python/FastAPI microservices are fully implemented and verified running end-to-end.
 
-#### `ingestion-service` (9 files) — ✅ Done
+#### `ingestion-service` — ✅ Running
 | Component | Status | Notes |
 |-----------|--------|-------|
-| REST Poller (8 sensors) | ✅ | Polls all 8 REST sensors on configurable interval via `httpx` |
+| REST Poller (8 sensors) | ✅ | Polls all 8 REST sensors every 5s via `httpx` |
 | SSE Streamer (7 topics) | ✅ | One `asyncio` task per topic, auto-reconnect on failure |
 | Event Normalizer (8 schemas) | ✅ | All 8 schema families mapped to unified format |
-| Kafka Producer | ✅ | Async producer with `send_and_wait`, keyed by `sensor_id` |
-| Unified Event Model | ✅ | Pydantic model matching the schema contract |
-| FastAPI Lifespan | ✅ | Starts producer + background tasks, graceful shutdown |
+| Kafka Producer | ✅ | Async `send_and_wait`, keyed by `sensor_id` |
 
-#### `processing-service` (13 files) — ✅ Done
+#### `processing-service` — ✅ Running
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Kafka Consumer | ✅ | Consumes `sensor.events`, inline producer for `actuator.events` |
-| State Cache | ✅ | Thread-safe in-memory `dict` with async lock |
-| Rule Engine / Evaluator | ✅ | 5 operators (`<`, `<=`, `=`, `>`, `>=`), sensor+metric matching |
-| Actuator Client | ✅ | POST/GET to simulator actuator endpoints via `httpx` |
-| Rules CRUD API | ✅ | Full REST: GET, POST, GET/{id}, PUT/{id}, DELETE/{id} |
-| State API | ✅ | GET /api/state, GET /api/state/{sensor_id} |
-| Actuators API | ✅ | GET /api/actuators, POST /api/actuators/{name} |
-| PostgreSQL ORM | ✅ | SQLAlchemy async + `asyncpg`, `automation_rules` table |
-| Rule Repository | ✅ | Full async CRUD with partial update support |
+| Kafka Consumer | ✅ | Consumes `sensor.events`, publishes `actuator.events` |
+| State Cache | ✅ | Thread-safe in-memory dict, verified populated with live data |
+| Rule Engine | ✅ | 5 operators, sensor+metric matching — verified triggering actuator |
+| Actuator Client | ✅ | POST/GET to simulator — verified `cooling_fan` toggled ON by rule |
+| Rules CRUD API | ✅ | Full REST — verified create, read, update, delete |
+| PostgreSQL ORM | ✅ | Rules persist across service restarts |
 
-#### `dashboard-service` (6 files) — ✅ Done
+#### `dashboard-service` — ✅ Running
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Kafka Consumer | ✅ | Subscribes to `sensor.events` + `actuator.events` |
-| WebSocket Manager | ✅ | Multi-client broadcast, dead connection cleanup |
-| REST API Proxy | ✅ | All 9 endpoints proxied to `processing-service` |
-| WS Message Envelope | ✅ | `sensor_update` / `actuator_update` types per contract |
+| Kafka Consumer | ✅ | Subscribed to `sensor.events` + `actuator.events` |
+| WebSocket Manager | ✅ | Broadcasting to connected clients |
+| REST API Proxy | ✅ | All endpoints proxied to processing-service |
 
----
+### Frontend — ⚠️ `~90% COMPLETE`
 
-### Frontend — `~90% COMPLETE`
-
-React 18 + Vite + Material UI. All 24 source files contain real implementation (no stubs).
+React 18 + Vite + Material UI. All 24 source files contain real implementation (no stubs). Frontend Dockerfile builds successfully.
 
 #### ✅ Fully Implemented
-| Component | Status | Notes |
-|-----------|--------|-------|
-| React Router (4 routes) | ✅ | `/`, `/actuators`, `/rules`, `/events` |
-| MUI Dark Theme (Mars palette) | ✅ | Rust-orange primary, amber secondary |
-| WebSocket Hook (singleton) | ✅ | Auto-reconnect with exponential backoff (1s–30s) |
-| Sensor Data Hook | ✅ | Live `sensors` map + `history` arrays from WS |
-| Dashboard (sensor card grid) | ✅ | Live values, status badges, timestamps |
-| StatusBadge | ✅ | Green (ok) / amber (warning) chip |
-| Actuator Panel + Toggle | ✅ | Fetch states + POST toggle |
-| Rule Manager (full CRUD) | ✅ | Create, edit, delete, enable/disable |
-| Rule Form (dialog) | ✅ | All fields: sensor, metric, operator, threshold, actuator, state |
-| Event Log (real-time table) | ✅ | WS-fed actuator events, newest first |
-| Header + Connection Indicator | ✅ | Live / Disconnected chip |
-| Sidebar Navigation | ✅ | Active route highlighting |
-| Nginx Config (prod) | ✅ | SPA fallback + API/WS proxy |
-| Multi-stage Dockerfile | ✅ | Node build → Nginx serve |
+| Component | Status |
+|-----------|--------|
+| React Router (4 routes: `/`, `/actuators`, `/rules`, `/events`) | ✅ |
+| MUI Dark Theme (Mars palette: rust-orange + amber) | ✅ |
+| WebSocket Hook (singleton, exponential backoff reconnect) | ✅ |
+| Live sensor card grid with status badges | ✅ |
+| Actuator Panel with toggle | ✅ |
+| Rule Manager (full CRUD) | ✅ |
+| Event Log (real-time WS feed) | ✅ |
+| Nginx SPA + API/WS proxy config | ✅ |
 
-#### 🔧 Known Gaps (Minor)
-| # | Issue | Severity | Detail |
-|---|-------|----------|--------|
-| 1 | `SensorChart` not mounted | Medium | Component is fully built (Recharts LineChart) but never rendered in `Dashboard.jsx`. US-05 requires time-series charts. |
-| 2 | No delete confirmation | Low | `RuleManager` deletes immediately without a confirmation dialog (US-11 acceptance criteria). |
-| 3 | No form validation | Low | `RuleForm` allows submitting empty sensor/metric fields. |
-| 4 | Actuators not WS-updated | Low | `ActuatorPanel` only fetches on mount; doesn't refresh from WS events. |
-| 5 | `formatters.js` unused | Trivial | Utility functions exist but no component imports them. |
+#### 🔧 Known Gaps
+| # | Issue | Severity |
+|---|-------|----------|
+| 1 | `SensorChart` built but not mounted in Dashboard | Medium |
+| 2 | No delete confirmation dialog in RuleManager | Low |
+| 3 | No client-side form validation in RuleForm | Low |
+| 4 | ActuatorPanel doesn't live-update from WS | Low |
 
----
+### Infrastructure — ✅ `COMPLETE`
 
-### Infrastructure — `COMPLETE`
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `docker-compose.yml` | ✅ | 8 services: simulator, zookeeper, kafka, postgres, 3 microservices, frontend |
-| Service Healthchecks | ✅ | All infra services have healthchecks with `depends_on` conditions |
-| PostgreSQL Volume | ✅ | `pgdata` volume for rule persistence across restarts |
-| Kafka Topics | ✅ | `sensor.events` + `actuator.events`, 1-hour retention |
-| Port Mappings | ✅ | Simulator:8080, Processing:8001, Dashboard:8002, Frontend:3000 |
-| All Dockerfiles | ✅ | Python 3.12-slim (backends), Node+Nginx multi-stage (frontend) |
-| `.gitignore` | ✅ | Python, Node, OS, IDE, OCI artifacts excluded |
+| Component | Status |
+|-----------|--------|
+| `docker-compose.yml` — 8 services with healthchecks | ✅ |
+| PostgreSQL `pgdata` volume for rule persistence | ✅ |
+| Kafka `sensor.events` + `actuator.events` topics | ✅ |
+| All service Dockerfiles | ✅ |
 
 ---
 
-### 🚧 Remaining Work
+## Remaining Work
 
-#### Must Do
 - [ ] Mount `SensorChart` in `Dashboard.jsx` (US-05)
-- [ ] Boot Docker Compose and integration-test
-- [ ] Load `mars-iot-simulator` Docker image into local daemon
-- [ ] End-to-end test: sensor → Kafka → rule evaluation → actuator trigger
-
-#### Should Do
 - [ ] Add delete confirmation dialog in `RuleManager` (US-11)
-- [ ] Add client-side form validation in `RuleForm`
-- [ ] Wire `ActuatorPanel` to WS for live state updates
-- [ ] Use `formatters.js` utilities in components
+- [ ] Add client-side validation in `RuleForm`
+- [ ] Wire `ActuatorPanel` to live WS actuator events
+- [ ] Write `input.md` (user stories + event schema documentation)
+- [ ] Write `Student_doc.md` (deployed system specifics)
+- [ ] Prepare presentation slides + LoFi mockups in `booklets/`
 
 ---
 
-### User Story Coverage
+## User Story Coverage
 
 | ID | Story | Status |
 |----|-------|--------|
-| US-01 | See list of all sensors | ✅ Backend + Frontend |
-| US-02 | See latest value of each sensor | ✅ Backend + Frontend |
-| US-03 | Real-time updates without refresh | ✅ WebSocket pipeline |
-| US-04 | Status badges (ok/warning) | ✅ `StatusBadge` component |
-| US-05 | Time-series chart | ⚠️ Component exists, not mounted |
-| US-06 | See actuator states | ✅ Backend + Frontend |
-| US-07 | Manually toggle actuator | ✅ Backend + Frontend |
-| US-08 | Create automation rule | ✅ Backend + Frontend |
-| US-09 | View all rules | ✅ Backend + Frontend |
-| US-10 | Edit existing rule | ✅ Backend + Frontend |
-| US-11 | Delete a rule | ⚠️ Works but no confirmation dialog |
-| US-12 | Rules persist across restarts | ✅ PostgreSQL + volume |
-| US-13 | Enable/disable rule | ✅ Backend + Frontend |
-| US-14 | Live event/trigger log | ✅ `EventLog` component |
-| US-15 | One-command launch | ✅ `docker compose up` |
+| US-01 | See list of all sensors | ✅ |
+| US-02 | See latest value of each sensor | ✅ |
+| US-03 | Real-time updates without refresh | ✅ |
+| US-04 | Status badges (ok/warning) | ✅ |
+| US-05 | Time-series chart | ⚠️ Component built, not mounted |
+| US-06 | See actuator states | ✅ |
+| US-07 | Manually toggle actuator | ✅ |
+| US-08 | Create automation rule | ✅ |
+| US-09 | View all rules | ✅ |
+| US-10 | Edit existing rule | ✅ |
+| US-11 | Delete a rule | ⚠️ Works, no confirmation dialog |
+| US-12 | Rules persist across restarts | ✅ |
+| US-13 | Enable/disable rule | ✅ |
+| US-14 | Live event/trigger log | ✅ |
+| US-15 | One-command launch | ✅ |
 
 ---
 
