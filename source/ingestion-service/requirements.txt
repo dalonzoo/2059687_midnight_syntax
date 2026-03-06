@@ -1,0 +1,13 @@
+# ---- Ingestion Service Dependencies ----
+# FastAPI web framework + ASGI server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Async Kafka producer
+aiokafka==0.12.0
+
+# Async HTTP client (for polling + SSE streams)
+httpx==0.28.1
+
+# Data validation
+pydantic==2.10.5
