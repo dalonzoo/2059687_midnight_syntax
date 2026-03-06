@@ -1,10 +1,13 @@
 input.md describes the system overview, the user stories, the standard event schema and the rule model
 
+
+## System overview
+
 Initial draft of user stories:
 
 Given that "I" am the only habitat operator, all user stories are referred to what "I", the operator, the only user think is needed
 
-#######USER STORIES
+### USER STORIES
 
 1) As a user, I want to be able to see the data from all sensors in an ordered page
 2) As a user, I want to see the newest data possible from the telemetry sensors
@@ -21,3 +24,8 @@ Given that "I" am the only habitat operator, all user stories are referred to wh
 13) As a user, I want automation rules to survive a system restart and not to have to set everything up again
 14) As a user, I want to compare the power consumption and the power bus to make sure the habitat is not in a power deficit.
 15) As a user, I want to be alerted if there is a power deficit
+
+
+## Standard event schema
+
+## Rule model
