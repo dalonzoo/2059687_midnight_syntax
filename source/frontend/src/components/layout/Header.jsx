@@ -12,10 +12,10 @@ function Header() {
   const { isConnected } = useWebSocket();
 
   return (
-    <header className="border-b border-white/10 bg-[#2b2b2b] shadow-sm w-full">
+    <header className="border-b border-white/10 bg-[#2b2b2b] shadow-sm w-full mt-10">
       <div className="flex items-center justify-between px-8 py-5">
         <h1 className="text-2xl font-semibold text-white">
-          Mars Habitat Monitoring
+          Mars Habitat Environmental Control System
         </h1>
 
         <div
