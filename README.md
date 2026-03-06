@@ -259,13 +259,20 @@ React 18 + Vite + Material UI. All 24 source files contain real implementation (
 
 ## Remaining Work
 
+### Frontend (React SPA)
+
 - [ ] Mount `SensorChart` in `Dashboard.jsx` (US-05)
 - [ ] Add delete confirmation dialog in `RuleManager` (US-11)
-- [ ] Add client-side validation in `RuleForm`
-- [ ] Wire `ActuatorPanel` to live WS actuator events
-- [ ] Write `input.md` (user stories + event schema documentation)
-- [ ] Write `Student_doc.md` (deployed system specifics)
-- [ ] Prepare presentation slides + LoFi mockups in `booklets/`
+- [ ] Add client-side form validation in `RuleForm` (sensor names, metric, operator, threshold)
+- [ ] Wire `ActuatorPanel` to live WS `actuator_update` events so toggles refresh in real-time
+
+### Documentation & Deliverables
+
+- [ ] Write `input.md` — user stories, unified event schema, rule model (required deliverable)
+- [ ] Write `Student_doc.md` — deployed system specifics (required deliverable)
+- [ ] Prepare presentation slides in `booklets/` (PDF)
+- [ ] Create LoFi mockups per user story in `booklets/lofi_mockups/`
+- [ ] Add architecture diagram export (PNG) in `booklets/`
 
 ---
 
