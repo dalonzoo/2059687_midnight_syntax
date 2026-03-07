@@ -34,6 +34,7 @@ const initialForm = {
 
 function RuleForm({ open, rule, onSave, onClose }) {
   const [form, setForm] = useState(initialForm);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (rule && Object.keys(rule).length > 0) {
@@ -59,8 +60,20 @@ function RuleForm({ open, rule, onSave, onClose }) {
     }));
   };
 
+  const validate = () => {
+    const newErrors = {};
+    if (!form.sensor_name.trim()) newErrors.sensor_name = "Sensor name is required";
+    if (!form.metric.trim()) newErrors.metric = "Metric is required";
+    if (form.threshold === "" || isNaN(Number(form.threshold)))
+      newErrors.threshold = "Threshold must be a valid number";
+    return newErrors;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
     onSave({
       ...form,
@@ -92,12 +105,14 @@ function RuleForm({ open, rule, onSave, onClose }) {
               value={form.sensor_name}
               onChange={handleChange("sensor_name")}
               placeholder="e.g. greenhouse_temperature"
+              error={errors.sensor_name}
             />
             <Input
               label="Metric"
               value={form.metric}
               onChange={handleChange("metric")}
               placeholder="e.g. temperature_c"
+              error={errors.metric}
             />
           </div>
 
@@ -114,6 +129,7 @@ function RuleForm({ open, rule, onSave, onClose }) {
               value={form.threshold}
               onChange={handleChange("threshold")}
               placeholder="0"
+              error={errors.threshold}
             />
             <Select
               label="Unit (optional)"
@@ -162,7 +178,7 @@ function RuleForm({ open, rule, onSave, onClose }) {
 }
 
 // Creating Custom Input Fields
-function Input({ label, ...props }) {
+function Input({ label, error, ...props }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-muted-foreground">
@@ -170,8 +186,11 @@ function Input({ label, ...props }) {
       </span>
       <input
         {...props}
-        className="w-full cursor-pointer rounded-2xl border border-border bg-background/40 px-4 py-3 text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-sub/40"
+        className={`w-full cursor-pointer rounded-2xl border bg-background/40 px-4 py-3 text-white outline-none transition placeholder:text-muted-foreground/60 focus:border-sub/40 ${
+          error ? "border-red-500/60" : "border-border"
+        }`}
       />
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </label>
   );
 }
