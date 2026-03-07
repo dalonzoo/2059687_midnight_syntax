@@ -3,6 +3,7 @@ import StatCard from "./StatCard";
 import SensorCard from "./SensorCard";
 import FeaturedSensorCard from "./FeaturedSensorCard";
 import SectionHeader from "./SectionHeader";
+import PowerComparison from "./PowerComparison";
 import useWebSocket from "../../hooks/useWebSocket";
 
 
@@ -127,6 +128,16 @@ function Dashboard() {
               />
             ))}
           </div>
+        </section>
+      )}
+
+      {(sensors?.power_bus || sensors?.power_consumption) && (
+        <section className="space-y-4 opacity-0 animate-fade-in-delay-3">
+          <SectionHeader
+            title="Power Overview"
+            subtitle="Compare power supply and consumption to detect deficits."
+          />
+          <PowerComparison sensors={sensors} />
         </section>
       )}
 
