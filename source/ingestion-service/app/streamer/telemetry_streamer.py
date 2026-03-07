@@ -103,19 +103,18 @@ def _parse_sse_event(event_text: str) -> dict | None:
 
 async def run_telemetry_streams(producer: KafkaEventProducer):
     """
-    Manage telemetry stream consumers.  Monitors config.TELEMETRY_TOPICS for
-    new entries (added by the discovery loop) and spawns a stream task for each.
+    Launch one asyncio task per telemetry topic defined in config.
+    All tasks run concurrently and reconnect independently on failure.
     """
-    logger.info("Telemetry stream manager started.")
-    active_topics: set[str] = set()
+    logger.info("Launching %d telemetry stream consumers...", len(config.TELEMETRY_TOPICS))
 
-    while True:
-        for topic, schema_family in dict(config.TELEMETRY_TOPICS).items():
-            if topic not in active_topics:
-                active_topics.add(topic)
-                asyncio.create_task(
-                    _stream_single_topic(topic, schema_family, producer),
-                    name=f"sse-{topic}",
-                )
-                logger.info("Spawned stream consumer for: %s (schema: %s)", topic, schema_family)
-        await asyncio.sleep(5)
+    tasks = [
+        asyncio.create_task(
+            _stream_single_topic(topic, schema_family, producer),
+            name=f"sse-{topic}",
+        )
+        for topic, schema_family in config.TELEMETRY_TOPICS.items()
+    ]
+
+    # Wait for all tasks (they run forever unless cancelled)
+    await asyncio.gather(*tasks)
