@@ -4,9 +4,9 @@ This document contains the full technical specification of the deployed system.
 
 ---
 
-# System Overview
+# SYSTEM DESCRIPTION:
 
-The Mars Habitat Automation Platform is a microservices-based IoT monitoring and automation system. It collects real-time sensor data from a Mars IoT simulator, evaluates user-defined automation rules, controls actuators, and provides a live dashboard for operators.
+The Mars Habitat Automation Platform is a microservices-based IoT monitoring and automation system for a simulated Mars habitat. It collects real-time sensor data from a Mars IoT simulator (REST polling + SSE telemetry streams), normalizes heterogeneous payloads into a unified internal event schema, evaluates user-defined automation rules, controls actuators, and provides a live dashboard for operators.
 
 **Architecture**: Event-driven microservices communicating via Apache Kafka, with a React SPA frontend served by Nginx.
 
@@ -14,9 +14,40 @@ The Mars Habitat Automation Platform is a microservices-based IoT monitoring and
 
 ---
 
-# Infrastructure Containers
+# USER STORIES:
 
-## Simulator
+1) As a user, I want to be able to see the data from all sensors in an ordered page
+2) As a user, I want to see the newest data possible from the telemetry sensors
+3) As a user, I want to see which automation rules are currently active
+4) As a user, I want to be able to override the automation rules manually
+5) As a user, I want to see an alert if the status for a sensor reaches a critical value
+6) As a user, I want to see graphs that show how the telemetry data evolves
+7) As a user, I want to monitor the greenhouse temperature and the hydroponic ph to ensure survival of the crops
+8) As a user, I want the platform to automatically update when an actuator state changes so I don't have to refresh the page
+9) As a user, I want to know when the data was produced for all sensors
+10) As a user, I want the data from all the sensors to be coherent and to have a clear unit of measurement
+11) As a user, I want to see the status of the connection to the simulator, to ensure I'm receiving data correctly
+12) As a user, I want the system to automatically discover new sensors and telemetry topics from the simulator so I don't have to hardcode new hardware
+13) As a user, I want automation rules to survive a system restart and not to have to set everything up again
+14) As a user, I want to compare the power consumption and the power bus to make sure the habitat is not in a power deficit
+15) As a user, I want to be alerted if there is a power deficit
+
+---
+
+# CONTAINERS:
+
+## Infrastructure Containers
+
+## CONTAINER_NAME: Simulator
+
+### DESCRIPTION:
+Provided Mars IoT simulator (unmodifiable). Exposes REST endpoints for polling sensor data, SSE streams for telemetry topics, and POST endpoints for actuator control.
+
+### USER STORIES:
+1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15 — all sensor/actuator data originates from this container.
+
+### PORTS:
+8080:8080
 
 | Property       | Value                              |
 |----------------|-------------------------------------|
@@ -25,22 +56,50 @@ The Mars Habitat Automation Platform is a microservices-based IoT monitoring and
 | External Port  | 8080                               |
 | Healthcheck    | `GET http://localhost:8080/health`  |
 
-**Description**: Provided Mars IoT simulator (unmodifiable). Exposes REST endpoints for polling sensor data, SSE streams for telemetry topics, and POST endpoints for actuator control.
+### PERSISTANCE EVALUATION
+The Simulator container does not persist data. All sensor values are generated in real-time.
+
+### EXTERNAL SERVICES CONNECTIONS
+The Simulator container does not connect to external services.
 
 ---
 
-## Zookeeper
+## CONTAINER_NAME: Zookeeper
+
+### DESCRIPTION:
+Coordination service required by Kafka. No external port exposed.
+
+### USER STORIES:
+No user stories directly associated. Infrastructure dependency for Kafka.
+
+### PORTS:
+2181 (internal only)
 
 | Property       | Value                              |
 |----------------|-------------------------------------|
 | Image          | `confluentinc/cp-zookeeper:7.6.0`  |
 | Client Port    | 2181 (internal only)               |
 
-**Description**: Coordination service required by Kafka. No external port exposed.
+### PERSISTANCE EVALUATION
+The Zookeeper container does not require persistent storage.
+
+### EXTERNAL SERVICES CONNECTIONS
+The Zookeeper container does not connect to external services.
 
 ---
 
-## Kafka
+## CONTAINER_NAME: Kafka
+
+### DESCRIPTION:
+Message broker. Central to the event-driven architecture. Two topics used:
+- `sensor.events` — normalized sensor readings (produced by ingestion-service, consumed by processing-service and dashboard-service)
+- `actuator.events` — actuator state changes (produced by processing-service, consumed by dashboard-service)
+
+### USER STORIES:
+1, 2, 5, 6, 7, 8, 9, 10, 14, 15 — all real-time data flows through Kafka.
+
+### PORTS:
+9092:9092
 
 | Property       | Value                              |
 |----------------|-------------------------------------|
@@ -49,18 +108,29 @@ The Mars Habitat Automation Platform is a microservices-based IoT monitoring and
 | External Port  | 9092                               |
 | Depends On     | Zookeeper (healthy)                |
 
-**Description**: Message broker. Two topics used:
-- `sensor.events` — normalized sensor readings (produced by ingestion-service, consumed by processing-service and dashboard-service)
-- `actuator.events` — actuator state changes (produced by processing-service, consumed by dashboard-service)
-
 **Key Configuration**:
 - `KAFKA_AUTO_CREATE_TOPICS_ENABLE: true`
 - `KAFKA_LOG_RETENTION_MS: 3600000` (1-hour retention)
 - `KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1` (single-broker setup)
 
+### PERSISTANCE EVALUATION
+Kafka retains messages for 1 hour (`LOG_RETENTION_MS: 3600000`). No permanent storage required; historical data is not needed.
+
+### EXTERNAL SERVICES CONNECTIONS
+The Kafka container does not connect to external services. Communicates only with Zookeeper and application services within the Docker network.
+
 ---
 
-## PostgreSQL
+## CONTAINER_NAME: PostgreSQL
+
+### DESCRIPTION:
+Relational database for persisting automation rules. Uses a named Docker volume for data durability across container restarts.
+
+### USER STORIES:
+3, 13 — rules are persisted in PostgreSQL so they survive restarts and can be listed.
+
+### PORTS:
+5432:5432
 
 | Property       | Value                              |
 |----------------|-------------------------------------|
@@ -69,7 +139,11 @@ The Mars Habitat Automation Platform is a microservices-based IoT monitoring and
 | External Port  | 5432                               |
 | Volume         | `pgdata:/var/lib/postgresql/data`  |
 
-**Persistence**: Named Docker volume `pgdata` persists the database across container restarts.
+### PERSISTANCE EVALUATION
+The PostgreSQL container requires persistent storage. A named Docker volume `pgdata` persists the database across container restarts.
+
+### EXTERNAL SERVICES CONNECTIONS
+The PostgreSQL container does not connect to external services. Only accessed by the processing-service within the Docker network.
 
 **Database Configuration**:
 - Database name: `mars_rules`
@@ -100,10 +174,32 @@ The Mars Habitat Automation Platform is a microservices-based IoT monitoring and
 
 ---
 
-## 1. Ingestion Service
+## CONTAINER_NAME: Ingestion Service
 
-### Description
+### DESCRIPTION:
 Collects data from the Mars IoT simulator via two mechanisms (REST polling and SSE streaming), normalizes readings into a `UnifiedEvent` schema, and publishes them to Kafka.
+
+### USER STORIES:
+2, 9, 10, 12 — ingests real-time telemetry data, normalizes payloads into coherent schema with units, auto-discovers sensors/topics.
+
+### PORTS:
+No external port (internal only)
+
+### PERSISTANCE EVALUATION
+The Ingestion Service does not require data persistence. It is a stateless data pipeline.
+
+### EXTERNAL SERVICES CONNECTIONS
+
+| Target     | Protocol | Purpose                                                    |
+|------------|----------|------------------------------------------------------------|
+| Simulator  | HTTP GET | Polls REST sensor endpoints (8 sensors by default)         |
+| Simulator  | SSE      | Subscribes to 7 telemetry topics via Server-Sent Events    |
+| Kafka      | TCP      | Produces normalized events to `sensor.events` topic        |
+
+### MICROSERVICES:
+
+#### MICROSERVICE: ingestion-service
+- TYPE: backend
 
 ### Docker Configuration
 
@@ -146,9 +242,9 @@ Collects data from the Mars IoT simulator via two mechanisms (REST polling and S
 
 ### HTTP Endpoints
 
-| Method | Path      | Description       |
-|--------|-----------|-------------------|
-| `GET`  | `/health` | Health check — returns `{"status": "ok", "service": "ingestion-service"}` |
+| HTTP Method | URL      | Description       | User Stories |
+|--------|-----------|-------------------|--------------|
+| `GET`  | `/health` | Health check — returns `{"status": "ok", "service": "ingestion-service"}` | — |
 
 ### External Service Connections
 
@@ -190,10 +286,32 @@ Collects data from the Mars IoT simulator via two mechanisms (REST polling and S
 
 ---
 
-## 2. Processing Service
+## CONTAINER_NAME: Processing Service
 
-### Description
+### DESCRIPTION:
 Consumes normalized sensor events from Kafka, evaluates user-defined automation rules stored in PostgreSQL, triggers actuator commands on the simulator when conditions are met, and exposes REST APIs for rules CRUD, sensor state queries, and actuator control.
+
+### USER STORIES:
+3, 4, 5, 8, 13 — manages automation rules (CRUD + persistence), evaluates rules in real-time, triggers actuators, maintains sensor state cache.
+
+### PORTS:
+8001:8001
+
+### PERSISTANCE EVALUATION
+The Processing Service requires persistent storage for automation rules. Uses PostgreSQL with SQLAlchemy async ORM. Also maintains an in-memory `StateCache` for latest sensor readings (volatile, lost on restart).
+
+### EXTERNAL SERVICES CONNECTIONS
+
+| Target     | Protocol   | Purpose                                           |
+|------------|------------|---------------------------------------------------|
+| Kafka      | TCP        | Consumes `sensor.events`, produces `actuator.events` |
+| PostgreSQL | TCP (5432) | Stores/retrieves automation rules                 |
+| Simulator  | HTTP POST  | Sends actuator commands                           |
+
+### MICROSERVICES:
+
+#### MICROSERVICE: processing-service
+- TYPE: backend
 
 ### Docker Configuration
 
@@ -236,30 +354,30 @@ Consumes normalized sensor events from Kafka, evaluates user-defined automation 
 ### HTTP Endpoints
 
 #### Health
-| Method | Path      | Description       |
-|--------|-----------|-------------------|
-| `GET`  | `/health` | Health check — returns `{"status": "ok", "service": "processing-service"}` |
+| HTTP Method | URL      | Description       | User Stories |
+|--------|-----------|-------------------|--------------|
+| `GET`  | `/health` | Health check — returns `{"status": "ok", "service": "processing-service"}` | — |
 
 #### Rules CRUD (`/api/rules`)
-| Method   | Path               | Description                                    |
-|----------|--------------------|------------------------------------------------|
-| `GET`    | `/api/rules`       | List all automation rules                      |
-| `POST`   | `/api/rules`       | Create a new rule (validates operator ∈ `{<,<=,=,>,>=}`, state ∈ `{ON,OFF}`) — returns 201 |
-| `GET`    | `/api/rules/{id}`  | Get a single rule by ID — 404 if not found     |
-| `PUT`    | `/api/rules/{id}`  | Update an existing rule — 404 if not found     |
-| `DELETE` | `/api/rules/{id}`  | Delete a rule — returns 204 on success, 404 if not found |
+| HTTP Method   | URL               | Description                                    | User Stories |
+|----------|--------------------|------------------------------------------------|--------------|
+| `GET`    | `/api/rules`       | List all automation rules                      | 3 |
+| `POST`   | `/api/rules`       | Create a new rule (validates operator ∈ `{<,<=,=,>,>=}`, state ∈ `{ON,OFF}`) — returns 201 | 3, 13 |
+| `GET`    | `/api/rules/{id}`  | Get a single rule by ID — 404 if not found     | 3 |
+| `PUT`    | `/api/rules/{id}`  | Update an existing rule — 404 if not found     | 4 |
+| `DELETE` | `/api/rules/{id}`  | Delete a rule — returns 204 on success, 404 if not found | 3 |
 
 #### Sensor State (`/api/state`)
-| Method | Path                    | Description                                          |
-|--------|-------------------------|------------------------------------------------------|
-| `GET`  | `/api/state`            | Get latest cached reading for all sensors (`{"sensors": {...}}`) |
-| `GET`  | `/api/state/{sensor_id}`| Get latest cached reading for a specific sensor — 404 if not yet seen |
+| HTTP Method | URL                    | Description                                          | User Stories |
+|--------|-------------------------|------------------------------------------------------|--------------|
+| `GET`  | `/api/state`            | Get latest cached reading for all sensors (`{"sensors": {...}}`) | 1, 7 |
+| `GET`  | `/api/state/{sensor_id}`| Get latest cached reading for a specific sensor — 404 if not yet seen | 1, 7 |
 
 #### Actuators (`/api/actuators`)
-| Method | Path                          | Description                                          |
-|--------|-------------------------------|------------------------------------------------------|
-| `GET`  | `/api/actuators`              | Get current state of all actuators from simulator — 502 if unreachable |
-| `POST` | `/api/actuators/{name}`       | Set actuator state (body: `{"state": "ON"|"OFF"}`) — 400 if invalid, 502 if unreachable |
+| HTTP Method | URL                          | Description                                          | User Stories |
+|--------|-------------------------------|------------------------------------------------------|--------------|
+| `GET`  | `/api/actuators`              | Get current state of all actuators from simulator — 502 if unreachable | 4 |
+| `POST` | `/api/actuators/{name}`       | Set actuator state (body: `{"state": "ON"|"OFF"}`) — 400 if invalid, 502 if unreachable | 4 |
 
 ### Kafka Consumer Pipeline (background task)
 
@@ -292,12 +410,38 @@ For each event consumed from `sensor.events`:
 - **Sensor name normalization**: Spaces in `sensor_name` are replaced with underscores for matching against `sensor_id`.
 - **State cache is volatile**: Designed for fast lookups only; no persistence needed since events stream continuously.
 
+- DB STRUCTURE:
+
+	**_automation_rules_** :	| **_id_** | sensor_name | metric | operator | threshold | unit | actuator_name | actuator_state | enabled | created_at | updated_at |
+
 ---
 
-## 3. Dashboard Service
+## CONTAINER_NAME: Dashboard Service
 
-### Description
+### DESCRIPTION:
 Acts as the single backend gateway for the React frontend. Relays real-time sensor and actuator events via WebSocket, and proxies all REST API calls to the Processing Service.
+
+### USER STORIES:
+1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 15 — serves as the single backend gateway for all frontend interactions.
+
+### PORTS:
+8082:8002
+
+### PERSISTANCE EVALUATION
+The Dashboard Service does not require data persistence. It is a stateless proxy and WebSocket relay.
+
+### EXTERNAL SERVICES CONNECTIONS
+
+| Target              | Protocol   | Purpose                                          |
+|---------------------|------------|--------------------------------------------------|
+| Kafka               | TCP        | Consumes `sensor.events` and `actuator.events`   |
+| Processing Service  | HTTP       | Proxies all `/api/*` REST calls                  |
+| Frontend clients    | WebSocket  | Pushes real-time updates                         |
+
+### MICROSERVICES:
+
+#### MICROSERVICE: dashboard-service
+- TYPE: backend
 
 ### Docker Configuration
 
@@ -336,24 +480,24 @@ Acts as the single backend gateway for the React frontend. Relays real-time sens
 
 ### HTTP/WS Endpoints
 
-| Method      | Path                          | Description                                           |
-|-------------|-------------------------------|-------------------------------------------------------|
-| `GET`       | `/health`                     | Health check — returns status + active WS connection count |
-| `WebSocket` | `/ws`                         | Real-time event stream for frontend clients           |
+| HTTP Method      | URL                          | Description                                           | User Stories |
+|-------------|-------------------------------|-------------------------------------------------------|--------------|
+| `GET`       | `/health`                     | Health check — returns status + active WS connection count | — |
+| `WebSocket` | `/ws`                         | Real-time event stream for frontend clients           | 2, 6, 8 |
 
 #### Proxy Endpoints (forwarded to Processing Service)
 
-| Method   | Path                          | Proxied To                              |
-|----------|-------------------------------|-----------------------------------------|
-| `GET`    | `/api/rules`                  | `processing-service:8001/api/rules`     |
-| `POST`   | `/api/rules`                  | `processing-service:8001/api/rules`     |
-| `GET`    | `/api/rules/{rule_id}`        | `processing-service:8001/api/rules/{rule_id}` |
-| `PUT`    | `/api/rules/{rule_id}`        | `processing-service:8001/api/rules/{rule_id}` |
-| `DELETE` | `/api/rules/{rule_id}`        | `processing-service:8001/api/rules/{rule_id}` |
-| `GET`    | `/api/state`                  | `processing-service:8001/api/state`     |
-| `GET`    | `/api/state/{sensor_id}`      | `processing-service:8001/api/state/{sensor_id}` |
-| `GET`    | `/api/actuators`              | `processing-service:8001/api/actuators` |
-| `POST`   | `/api/actuators/{name}`       | `processing-service:8001/api/actuators/{name}` |
+| HTTP Method   | URL                          | Proxied To                              | User Stories |
+|----------|-------------------------------|-----------------------------------------|--------------|
+| `GET`    | `/api/rules`                  | `processing-service:8001/api/rules`     | 3 |
+| `POST`   | `/api/rules`                  | `processing-service:8001/api/rules`     | 3, 13 |
+| `GET`    | `/api/rules/{rule_id}`        | `processing-service:8001/api/rules/{rule_id}` | 3 |
+| `PUT`    | `/api/rules/{rule_id}`        | `processing-service:8001/api/rules/{rule_id}` | 4 |
+| `DELETE` | `/api/rules/{rule_id}`        | `processing-service:8001/api/rules/{rule_id}` | 3 |
+| `GET`    | `/api/state`                  | `processing-service:8001/api/state`     | 1, 7 |
+| `GET`    | `/api/state/{sensor_id}`      | `processing-service:8001/api/state/{sensor_id}` | 1, 7 |
+| `GET`    | `/api/actuators`              | `processing-service:8001/api/actuators` | 4 |
+| `POST`   | `/api/actuators/{name}`       | `processing-service:8001/api/actuators/{name}` | 4 |
 
 ### Kafka Consumer (background task)
 
@@ -383,10 +527,27 @@ Subscribes to both `sensor.events` and `actuator.events` (separate consumer grou
 
 ---
 
-## 4. Frontend
+## CONTAINER_NAME: Frontend
 
-### Description
+### DESCRIPTION:
 React Single-Page Application (SPA) providing a real-time monitoring dashboard for the Mars Habitat. Built with Vite, served by Nginx in production, with reverse-proxy routing to the dashboard-service.
+
+### USER STORIES:
+1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 15 — all user-facing stories are implemented in the frontend.
+
+### PORTS:
+3000:80
+
+### PERSISTANCE EVALUATION
+The Frontend container does not include a database.
+
+### EXTERNAL SERVICES CONNECTIONS
+The Frontend container connects to the dashboard-service via HTTP (REST API proxy) and WebSocket (real-time updates). No external third-party services.
+
+### MICROSERVICES:
+
+#### MICROSERVICE: frontend
+- TYPE: frontend
 
 ### Docker Configuration (Multi-Stage Build)
 
@@ -457,6 +618,15 @@ During local development (`npm run dev`):
 - **Nginx as reverse proxy**: All backend traffic goes through Nginx, so the frontend only needs to know its own origin — no CORS issues in production.
 - **Dual styling**: MUI for structured components + Tailwind CSS for utility-based layout.
 - **Lottie animations**: Mars-themed loading animations via `lottie-react`.
+
+### PAGES:
+
+| Name | Route | Description | Related Microservice | User Stories |
+| ---- | ----- | ----------- | -------------------- | ------------ |
+| Dashboard | `/` | Main real-time sensor monitoring view. Shows stat cards (total sensors, healthy count, warnings, connection status), priority readings for featured sensors, power overview comparing supply vs consumption, and grids of REST and Telemetry sensor cards with live charts. | dashboard-service (WebSocket + REST `/api/state`) | 1, 2, 5, 6, 7, 9, 11, 14, 15 |
+| ActuatorPanel | `/actuators` | Displays a grid of actuator cards with current ON/OFF state. Users can manually toggle each actuator. State updates arrive in real-time via WebSocket. | dashboard-service (REST `/api/actuators` + WebSocket) | 4, 8 |
+| RuleManager | `/rules` | CRUD interface for automation rules. Lists all rules (sorted enabled-first), allows creating, editing, toggling, and deleting rules via a confirmation dialog. | dashboard-service (REST `/api/rules` proxy → processing-service) | 3, 4, 13 |
+| EventLog | `/events` | Scrolling table of actuator trigger events showing timestamp, actuator name, state, rule number, and triggering sensor. Events accumulated from WebSocket stream. | dashboard-service (WebSocket only) | 8 |
 
 ---
 
