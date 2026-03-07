@@ -222,9 +222,9 @@ All three Python/FastAPI microservices are fully implemented and verified runnin
 | WebSocket Manager | ✅ | Broadcasting to connected clients |
 | REST API Proxy | ✅ | All endpoints proxied to processing-service |
 
-### Frontend — ⚠️ `~90% COMPLETE`
+### Frontend — ✅ `COMPLETE`
 
-React 18 + Vite + Material UI. All 24 source files contain real implementation (no stubs). Frontend Dockerfile builds successfully.
+React 18 + Vite + Material UI. All source files contain real implementation (no stubs). Frontend Dockerfile builds successfully.
 
 #### ✅ Fully Implemented
 | Component | Status |
@@ -233,18 +233,13 @@ React 18 + Vite + Material UI. All 24 source files contain real implementation (
 | MUI Dark Theme (Mars palette: rust-orange + amber) | ✅ |
 | WebSocket Hook (singleton, exponential backoff reconnect) | ✅ |
 | Live sensor card grid with status badges | ✅ |
-| Actuator Panel with toggle | ✅ |
-| Rule Manager (full CRUD) | ✅ |
+| SensorChart (time-series) mounted in SensorCard for telemetry sensors | ✅ |
+| Power Comparison panel with deficit alert | ✅ |
+| Actuator Panel with toggle + live WS updates | ✅ |
+| Rule Manager (full CRUD + delete confirmation dialog) | ✅ |
+| Rule Form with client-side validation | ✅ |
 | Event Log (real-time WS feed) | ✅ |
 | Nginx SPA + API/WS proxy config | ✅ |
-
-#### 🔧 Known Gaps
-| # | Issue | Severity |
-|---|-------|----------|
-| 1 | `SensorChart` built but not mounted in Dashboard | Medium |
-| 2 | No delete confirmation dialog in RuleManager | Low |
-| 3 | No client-side form validation in RuleForm | Low |
-| 4 | ActuatorPanel doesn't live-update from WS | Low |
 
 ### Infrastructure — ✅ `COMPLETE`
 
@@ -259,16 +254,9 @@ React 18 + Vite + Material UI. All 24 source files contain real implementation (
 
 ## Remaining Work
 
-### Frontend (React SPA)
-
-- [ ] Mount `SensorChart` in `Dashboard.jsx` (US-05)
-- [ ] Add delete confirmation dialog in `RuleManager` (US-11)
-- [ ] Add client-side form validation in `RuleForm` (sensor names, metric, operator, threshold)
-- [ ] Wire `ActuatorPanel` to live WS `actuator_update` events so toggles refresh in real-time
-
 ### Documentation & Deliverables
 
-- [ ] Write `input.md` — user stories, unified event schema, rule model (required deliverable)
+- [x] Write `input.md` — user stories, unified event schema, rule model (required deliverable)
 - [ ] Write `Student_doc.md` — deployed system specifics (required deliverable)
 - [ ] Prepare presentation slides in `booklets/` (PDF)
 - [ ] Create LoFi mockups per user story in `booklets/lofi_mockups/`
@@ -278,24 +266,26 @@ React 18 + Vite + Material UI. All 24 source files contain real implementation (
 
 ## User Story Coverage
 
-| ID | Story | Status |
-|----|-------|--------|
-| US-01 | See list of all sensors | ✅ |
-| US-02 | See latest value of each sensor | ✅ |
-| US-03 | Real-time updates without refresh | ✅ |
-| US-04 | Status badges (ok/warning) | ✅ |
-| US-05 | Time-series chart | ⚠️ Component built, not mounted |
-| US-06 | See actuator states | ✅ |
-| US-07 | Manually toggle actuator | ✅ |
-| US-08 | Create automation rule | ✅ |
-| US-09 | View all rules | ✅ |
-| US-10 | Edit existing rule | ✅ |
-| US-11 | Delete a rule | ⚠️ Works, no confirmation dialog |
-| US-12 | Rules persist across restarts | ✅ |
-| US-13 | Enable/disable rule | ✅ |
-| US-14 | Live event/trigger log | ✅ |
-| US-15 | One-command launch | ✅ |
+Mapped to user stories defined in `input.md`:
+
+| # | Story | Status | Component |
+|---|-------|--------|-----------|
+| 1 | See all sensors in an ordered page | ✅ | Dashboard sensor grid |
+| 2 | See newest telemetry data | ✅ | WebSocket live updates |
+| 3 | See which automation rules are active | ✅ | RuleManager |
+| 4 | Override automation rules manually | ✅ | ActuatorPanel toggles |
+| 5 | Alert on critical sensor value | ✅ | StatusBadge (ok/warning) |
+| 6 | Graphs showing telemetry evolution | ✅ | SensorChart in SensorCard |
+| 7 | Monitor greenhouse temp & hydroponic pH | ✅ | Featured sensors section |
+| 8 | Auto-update on actuator state change | ✅ | ActuatorPanel WS integration |
+| 9 | Know when data was produced | ✅ | Timestamps on all cards |
+| 10 | Coherent data with clear units | ✅ | UnifiedEvent schema |
+| 11 | See connection status to simulator | ✅ | Dashboard connection indicator |
+| 12 | Auto-discover new sensors/topics | ✅ | Dynamic polling + SSE subscription |
+| 13 | Rules survive system restart | ✅ | PostgreSQL persistence |
+| 14 | Compare power consumption vs power bus | ✅ | PowerComparison component |
+| 15 | Power deficit alert | ✅ | PowerComparison deficit warning |
 
 ---
 
-*Last updated: March 6, 2026*
+*Last updated: March 7, 2026*
