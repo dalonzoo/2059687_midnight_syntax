@@ -8,6 +8,7 @@ function RuleManager() {
   const [rules, setRules] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchRules = async () => {
   try {
@@ -49,6 +50,7 @@ function RuleManager() {
   const handleDeleteRule = async (id) => {
     try {
       await api.delete(`/api/rules/${id}`);
+      setDeleteTarget(null);
       fetchRules();
     } catch (error) {
       console.error("Failed to delete rule:", error);
@@ -116,7 +118,7 @@ function RuleManager() {
                 setEditingRule(rule);
                 setShowForm(true);
               }}
-              onDelete={() => handleDeleteRule(rule.id)}
+              onDelete={() => setDeleteTarget(rule)}
               onToggle={() => handleToggleRule(rule)}
             />
           ))}
@@ -132,6 +134,35 @@ function RuleManager() {
         }}
         onSave={handleSaveRule}
       />
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[28px] border border-border bg-card/95 p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-white">Delete Rule</h3>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Are you sure you want to delete the rule for{" "}
+              <span className="font-medium text-white">{deleteTarget.sensor_name}</span>?
+              This action cannot be undone.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-2xl cursor-pointer border border-border bg-background/40 px-5 py-3 text-sm font-semibold text-muted-foreground transition hover:bg-card hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteRule(deleteTarget.id)}
+                className="rounded-2xl cursor-pointer bg-red-600/80 border border-red-500/30 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
