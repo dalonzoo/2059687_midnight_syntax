@@ -69,6 +69,7 @@ services:
       POSTGRES_USER: mars
       POSTGRES_PASSWORD: mars
       POSTGRES_DB: mars_rules
+      PGDATABASE: mars_rules
     ports:
       - "5432:5432"
     volumes:
