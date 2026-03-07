@@ -32,7 +32,7 @@ function RuleCard({ rule, onEdit, onDelete, onToggle }) {
             <span className="font-semibold">THEN {" "} </span>
             set{" "}
             <span className="italic text-white">
-              {formatText(rule.actuator_name)} {" "}
+              {rule.actuator_name} {" "}
             </span>
             to{" "}
             <span className="font-semibold text-white">
