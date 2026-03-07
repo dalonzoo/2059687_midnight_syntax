@@ -1,11 +1,9 @@
-import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 
 import theme from "./theme";
 
 import Sidebar from "./components/layout/Sidebar";
-import Header from "./components/layout/Header";
 
 import Dashboard from "./components/dashboard/Dashboard";
 import ActuatorPanel from "./components/actuators/ActuatorPanel";
@@ -22,7 +20,7 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 3000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, []);

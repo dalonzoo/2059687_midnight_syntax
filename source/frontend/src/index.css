@@ -95,23 +95,19 @@
   }
 }
 
-/* Styling the entire scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
 }
 
-/* Styling the scrollbar track */
 ::-webkit-scrollbar-track {
   @apply bg-background;
 }
 
-/* Styling the scrollbar thumb */
 ::-webkit-scrollbar-thumb {
   @apply bg-sub;
   border-radius: 5px;
 }
 
-/* Styling the scrollbar thumb on hover */
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-primary
 }
