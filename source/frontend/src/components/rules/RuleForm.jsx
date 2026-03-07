@@ -39,6 +39,7 @@ function RuleForm({ open, rule, onSave, onClose }) {
     if (rule && Object.keys(rule).length > 0) {
       setForm({
         sensor_name: rule.sensor_name ?? "",
+        metric: rule.metric ?? "",
         operator: rule.operator ?? ">",
         threshold: rule.threshold ?? "",
         unit: rule.unit ?? "",
@@ -92,15 +93,21 @@ function RuleForm({ open, rule, onSave, onClose }) {
               onChange={handleChange("sensor_name")}
               placeholder="e.g. greenhouse_temperature"
             />
+            <Input
+              label="Metric"
+              value={form.metric}
+              onChange={handleChange("metric")}
+              placeholder="e.g. temperature_c"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_1fr_180px]">
             <Select
               label="Operator"
               value={form.operator}
               onChange={handleChange("operator")}
               options={OPERATORS}
             />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px]">
             <Input
               label="Threshold"
               type="number"
@@ -113,16 +120,17 @@ function RuleForm({ open, rule, onSave, onClose }) {
               value={form.unit}
               onChange={handleChange("unit")}
               options={UNITS}
+              placeholder="°C"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_180px]">
             <Select
-              label="Actuator"
-              value={form.actuator_name}
-              onChange={handleChange("actuator_name")}
-              options={ACTUATORS}
-            />
+                label="Actuator"
+                value={form.actuator_name}
+                onChange={handleChange("actuator_name")}
+                options={ACTUATORS}
+              />
             <Select
               label="Set To"
               value={form.actuator_state}
@@ -193,7 +201,7 @@ function Select({ label, options, formatOption, ...props }) {
         ))}
       </select>
 
-      <span className="pointer-events-none absolute right-4 top-[38px] text-muted-foreground">
+      <span className="pointer-events-none absolute top-1/2 right-4 text-muted-foreground">
         ▾
       </span>
     </label>

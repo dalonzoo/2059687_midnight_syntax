@@ -42,10 +42,13 @@ function RuleCard({ rule, onEdit, onDelete, onToggle }) {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs text-muted-foreground">
-              Sensor: {formatText(rule.sensor_name)}
+              Sensor: {rule.sensor_name}
             </span>
             <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs text-muted-foreground">
-              Actuator: {formatText(rule.actuator_name)}
+              Actuator: {rule.actuator_name}
+            </span>
+            <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-xs text-muted-foreground">
+              Metric: {rule.metric ? rule.metric : "Not set"}
             </span>
             <span
               className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${
