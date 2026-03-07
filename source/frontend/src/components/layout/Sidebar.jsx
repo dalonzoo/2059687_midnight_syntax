@@ -19,7 +19,7 @@ function Sidebar() {
   const navigate = useNavigate();
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-border bg-background text-foreground">
+    <aside className="fixed left-0 top-0 flex h-screen w-60 flex-col border-r border-border bg-background text-foreground opacity-0 animate-fade-in-delay-1">
       <div className="border-b border-border px-5 py-5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/25">
@@ -52,7 +52,7 @@ function Sidebar() {
               <li key={item.path}>
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 ${
+                  className={`group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left transition-colots duration-500 ${
                     isActive
                       ? "border border-primary/25 bg-primary/30 shadow-sm"
                       : "border border-transparent hover:border-border hover:bg-card"
@@ -115,6 +115,7 @@ function Sidebar() {
         </div>
       </div>
     </aside>
+
   );
 }
 

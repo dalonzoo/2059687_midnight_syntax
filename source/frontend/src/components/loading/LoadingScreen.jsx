@@ -23,12 +23,12 @@ function LoadingScreen() {
 
           {/* orbiting dot 1 */}
           <div className="absolute h-40 w-40 animate-spin">
-            <div className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 rounded-full bg-warning shadow-[0_0_20px_hsl(var(--warning))]" />
+            <div className="absolute left-1/2 top-1 h-3 w-3 -translate-x-1/2 rounded-full bg-warning shadow-[0_0_20px_hsl(var(--warning))]" />
           </div>
 
           {/* orbiting dot 2 reverse feel */}
           <div className="absolute h-28 w-28 animate-[spin_5s_linear_infinite_reverse]">
-            <div className="absolute left-1/2 top-0 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-success shadow-[0_0_16px_hsl(var(--success))]" />
+            <div className="absolute left-1/2 top-1 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-success shadow-[0_0_16px_hsl(var(--success))]" />
           </div>
 
           {/* center core */}
@@ -56,7 +56,7 @@ function LoadingScreen() {
           </h1>
 
           <p className="text-sm text-muted-foreground md:text-base">
-            Initializing telemetry, syncing sensors, and establishing habitat link...
+            Initializing monitoring systems...
           </p>
 
           {/* animated loading bars */}

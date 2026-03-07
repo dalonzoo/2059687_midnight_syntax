@@ -22,6 +22,13 @@
 
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --animate-fade-in: fade-in 0.7s ease-out forwards;
+  --animate-fade-in-delay-1: fade-in 0.7s ease-out 0.2s forwards;
+  --animate-fade-in-delay-2: fade-in 0.7s ease-out 0.4s forwards;
+  --animate-fade-in-delay-3: fade-in 0.7s ease-out 0.6s forwards;
+  --animate-fade-in-delay-4: fade-in 0.7s ease-out 0.8s forwards;
+  --animate-fade-in-delay-5: fade-in 0.7s ease-out 1.0s forwards;
 }
 
 @layer base {
@@ -53,7 +60,30 @@
     /* Utility neutrals */
     --muted: 0 0% 16%;
     --muted-foreground: 0 0% 70%;
+
+    /* Calm Animations */
+    --animate-fade-in: fade-in 0.7s ease-out forwards;
+    --animate-fade-in-delay-1: fade-in 0.7s ease-out 0.2s forwards;
+    --animate-fade-in-delay-2: fade-in 0.7s ease-out 0.4s forwards;
+    --animate-fade-in-delay-3: fade-in 0.7s ease-out 0.6s forwards;
+    --animate-fade-in-delay-4: fade-in 0.7s ease-out 0.8s forwards;
+    --animate-fade-in-delay-5: fade-in 0.7s ease-out 1.0s forwards;
   }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  html {
+    @apply scroll-smooth;
+   }
 
   * {
     border-color: hsl(var(--border));
@@ -63,4 +93,25 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+}
+
+/* Styling the entire scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Styling the scrollbar track */
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+/* Styling the scrollbar thumb */
+::-webkit-scrollbar-thumb {
+  @apply bg-sub;
+  border-radius: 5px;
+}
+
+/* Styling the scrollbar thumb on hover */
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary
 }

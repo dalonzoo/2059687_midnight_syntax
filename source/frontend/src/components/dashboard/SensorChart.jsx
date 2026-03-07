@@ -1,59 +1,104 @@
-/**
- * SensorChart.jsx — Line chart widget for a sensor's recent values.
- *
- * Accumulates data points while the page is open and displays them
- * as a live-updating Recharts LineChart.
- */
-import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
+import React, { useMemo } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-/**
- * @param {string} sensorId - The sensor identifier.
- * @param {Array} history - Array of UnifiedEvent objects (chronological).
- * @param {string} [metric] - Which measurement metric to chart (default: first).
- */
-function SensorChart({ sensorId, history = [], metric }) {
-  // Transform history into chart data points
-  const chartData = history.map((event) => {
-    const m = metric
-      ? event.measurements?.find((mm) => mm.metric === metric)
-      : event.measurements?.[0];
-    return {
-      time: new Date(event.timestamp).toLocaleTimeString(),
-      value: m?.value ?? 0,
-    };
-  });
+function SensorChart({ history = [], metric, unit = "" }) {
+  const data = useMemo(() => {
+    return history
+      .map((event) => {
+        const measurement = event?.measurements?.find((m) => m.metric === metric);
+        if (!measurement) return null;
 
-  const displayMetric = metric || history[0]?.measurements?.[0]?.metric || 'value';
-  const unit = history[0]?.measurements?.find((m) => m.metric === displayMetric)?.unit || '';
+        const date = event?.timestamp ? new Date(event.timestamp) : null;
+
+        return {
+          value: typeof measurement.value === "number" ? measurement.value : null,
+          label: date
+            ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            : "--:--",
+          fullTime: date ? date.toLocaleTimeString() : "Unknown time",
+        };
+      })
+      .filter(Boolean);
+  }, [history, metric]);
+
+  if (!data.length) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-border bg-background/30">
+        <span className="text-sm text-muted-foreground">Waiting for telemetry history...</span>
+      </div>
+    );
+  }
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="subtitle2" gutterBottom>
-          {sensorId} — {displayMetric} ({unit})
-        </Typography>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#e65100"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <div className="h-32 w-full rounded-2xl border border-border bg-background/30 px-2 pt-3">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="telemetryFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(var(--sub))" stopOpacity={0.5} />
+              <stop offset="95%" stopColor="hsl(var(--sub))" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+
+          <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+
+          <XAxis
+            dataKey="label"
+            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            minTickGap={20}
+          />
+
+          <YAxis
+            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            width={36}
+            domain={["auto", "auto"]}
+          />
+
+          <Tooltip
+            cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+            contentStyle={{
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "16px",
+              color: "white",
+            }}
+            formatter={(value) => [
+              typeof value === "number" ? `${value.toFixed(2)} ${unit}` : value,
+              metric,
+            ]}
+            labelFormatter={(label, payload) => payload?.[0]?.payload?.fullTime || label}
+          />
+
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="hsl(var(--sub))"
+            strokeWidth={2.5}
+            fill="url(#telemetryFill)"
+            dot={false}
+            activeDot={{
+              r: 4,
+              stroke: "hsl(var(--sub))",
+              strokeWidth: 2,
+              fill: "hsl(var(--card))",
+            }}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

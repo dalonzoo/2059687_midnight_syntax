@@ -22,7 +22,7 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 10500);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -42,13 +42,12 @@ function App() {
         <Sidebar />
 
         {/* Content */}
-        <main className="flex flex-col flex-1">
+        <main className="ml-60 flex flex-col flex-1">
 
-          {/* Header */}
-          <Header />
+
 
           {/* Page Content */}
-          <div className="flex-1 p-6 bg-red">
+          <div className="flex-1 p-6 md:p-8 ">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/actuators" element={<ActuatorPanel />} />

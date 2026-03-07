@@ -1,94 +1,114 @@
-/**
- * RuleManager.jsx — CRUD interface for automation rules.
- *
- * Displays a list of all rules and provides a form to create/edit them.
- */
-import { useState, useEffect, useCallback } from 'react';
-import AddIcon from '@mui/icons-material/Add';
-import RuleCard from './RuleCard';
-import RuleForm from './RuleForm';
-import api from '../../services/api';
+import { useEffect, useState } from "react";
+import AddIcon from "@mui/icons-material/Add";
+import RuleCard from "./RuleCard";
+import RuleForm from "./RuleForm";
+import api from "../../services/api";
 
 function RuleManager() {
   const [rules, setRules] = useState([]);
-  const [editingRule, setEditingRule] = useState(null); // null = closed, {} = new, {id:...} = edit
   const [showForm, setShowForm] = useState(false);
+  const [editingRule, setEditingRule] = useState(null);
 
-  /** Fetch all rules from the API. */
-  const fetchRules = useCallback(async () => {
-    try {
-      const res = await api.get('/api/rules');
-      setRules(res.data);
-    } catch (err) {
-      console.error('Failed to fetch rules:', err);
-    }
-  }, []);
+  const fetchRules = async () => {
+  try {
+    const res = await api.get("/api/rules");
+    // debugging
+    console.log("GET /api/rules response:", res.data);
+    setRules(Array.isArray(res.data) ? res.data : res.data.rules || []);
+  } catch (error) {
+    // debugging
+    console.error("Failed to fetch rules:", error);
+  }
+};
 
   useEffect(() => {
     fetchRules();
-  }, [fetchRules]);
+  }, []);
 
-  /** Handle rule creation or update. */
-  const handleSave = async (data) => {
+  const handleSaveRule = async (ruleData) => {
     try {
+      console.log("Submitting rule:", ruleData);
+
+      let res;
       if (editingRule?.id) {
-        await api.put(`/api/rules/${editingRule.id}`, data);
+        res = await api.put(`/api/rules/${editingRule.id}`, ruleData);
       } else {
-        await api.post('/api/rules', data);
+        res = await api.post("/api/rules", ruleData);
       }
+
+      console.log("Save rule response:", res?.data);
+
       setShowForm(false);
       setEditingRule(null);
       fetchRules();
-    } catch (err) {
-      console.error('Failed to save rule:', err);
+    } catch (error) {
+      console.error("Failed to save rule:", error);
     }
   };
 
-  /** Handle rule deletion. */
-  const handleDelete = async (id) => {
+  const handleDeleteRule = async (id) => {
     try {
       await api.delete(`/api/rules/${id}`);
       fetchRules();
-    } catch (err) {
-      console.error('Failed to delete rule:', err);
+    } catch (error) {
+      console.error("Failed to delete rule:", error);
     }
   };
 
-  /** Handle toggling rule enabled/disabled. */
-  const handleToggleEnabled = async (rule) => {
+  const handleToggleRule = async (rule) => {
     try {
-      await api.put(`/api/rules/${rule.id}`, { enabled: !rule.enabled });
+      await api.put(`/api/rules/${rule.id}`, {
+        ...rule,
+        enabled: !rule.enabled,
+      });
       fetchRules();
-    } catch (err) {
-      console.error('Failed to toggle rule:', err);
+    } catch (error) {
+      console.error("Failed to toggle rule:", error);
     }
   };
+  const sortedRules = [...rules].sort((a, b) => {
+    if (a.enabled === b.enabled) return 0;
+    return a.enabled ? -1 : 1;
+  });
 
   return (
-    <>
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-white">Automation Rules</h2>
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="opacity-0 animate-fade-in-delay-1">
+          <p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-sub">
+            Mars Habitat
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+            Automation Rules
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
+            Configure automated sensor conditions that switch actuators on or off.
+          </p>
+        </div>
 
         <button
           type="button"
           onClick={() => {
-            setEditingRule({});
+            setEditingRule(null);
             setShowForm(true);
           }}
-          className="inline-flex items-center gap-2 rounded-xl bg-button px-4 py-2 text-sm font-medium 
-          text-white shadow-md transition hover:opacity-90 cursor-pointer"
+          className="inline-flex cursor-pointer items-center opacity-0 animate-fade-in-delay-2 gap-2 rounded-2xl bg-button px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:opacity-90"
         >
           <AddIcon fontSize="small" />
           <span>Add Rule</span>
         </button>
       </div>
 
-      {/* Rule list */}
       {rules.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No rules configured yet.</p>
+        <div className="rounded-[28px] border border-border bg-card/70 p-8 text-center opacity-0 animate-fade-in-delay-3">
+          <p className="text-lg font-medium text-white">No automation rules yet!</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Create a rule to automatically toggle an actuator when a sensor condition is met.
+          </p>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {rules.map((rule) => (
+        <div className="space-y-4 opacity-0 animate-fade-in-delay-3">
+          {sortedRules.map((rule) => (
             <RuleCard
               key={rule.id}
               rule={rule}
@@ -96,26 +116,23 @@ function RuleManager() {
                 setEditingRule(rule);
                 setShowForm(true);
               }}
-              onDelete={() => handleDelete(rule.id)}
-              onToggle={() => handleToggleEnabled(rule)}
+              onDelete={() => handleDeleteRule(rule.id)}
+              onToggle={() => handleToggleRule(rule)}
             />
           ))}
         </div>
       )}
 
-      {/* Create/Edit form dialog */}
-      {showForm && (
-        <RuleForm
-          open={showForm}
-          rule={editingRule}
-          onSave={handleSave}
-          onClose={() => {
-            setShowForm(false);
-            setEditingRule(null);
-          }}
-        />
-      )}
-    </>
+      <RuleForm
+        open={showForm}
+        rule={editingRule}
+        onClose={() => {
+          setShowForm(false);
+          setEditingRule(null);
+        }}
+        onSave={handleSaveRule}
+      />
+    </div>
   );
 }
 
