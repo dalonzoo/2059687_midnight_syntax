@@ -17,6 +17,9 @@ KAFKA_BOOTSTRAP_SERVERS: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9
 # How often to poll REST sensors (seconds)
 POLL_INTERVAL_SECONDS: int = int(os.getenv("POLL_INTERVAL_SECONDS", "5"))
 
+# How often to re-discover sensors/topics from the simulator (seconds)
+DISCOVERY_INTERVAL_SECONDS: int = int(os.getenv("DISCOVERY_INTERVAL_SECONDS", "30"))
+
 # Kafka topic where normalized sensor events are published
 SENSOR_EVENTS_TOPIC: str = os.getenv("SENSOR_EVENTS_TOPIC", "sensor.events")
 

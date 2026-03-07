@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import config
+from app.discovery import initial_discovery, run_discovery_loop
 from app.kafka_producer import KafkaEventProducer
 from app.poller.rest_poller import run_rest_polling_loop
 from app.streamer.telemetry_streamer import run_telemetry_streams
@@ -36,6 +37,18 @@ async def lifespan(app: FastAPI):
     """
     logger.info("Starting Ingestion Service...")
 
+    # Discover available sensors and telemetry topics from the simulator
+    try:
+        rest, tele = await initial_discovery()
+        if rest:
+            config.REST_SENSORS = rest
+            logger.info("Discovered %d REST sensors", len(rest))
+        if tele:
+            config.TELEMETRY_TOPICS = tele
+            logger.info("Discovered %d telemetry topics", len(tele))
+    except Exception as e:
+        logger.warning("Initial discovery failed, using defaults: %s", e)
+
     # Initialize the Kafka producer
     producer = KafkaEventProducer(config.KAFKA_BOOTSTRAP_SERVERS)
     await producer.start()
@@ -45,6 +58,7 @@ async def lifespan(app: FastAPI):
     tasks = []
     tasks.append(asyncio.create_task(run_rest_polling_loop(producer)))
     tasks.append(asyncio.create_task(run_telemetry_streams(producer)))
+    tasks.append(asyncio.create_task(run_discovery_loop()))
     logger.info("Background ingestion tasks launched.")
 
     yield  # Application is running
