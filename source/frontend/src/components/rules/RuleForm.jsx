@@ -77,6 +77,7 @@ function RuleForm({ open, rule, onSave, onClose }) {
 
     onSave({
       ...form,
+      sensor_name: form.sensor_name.trim().replace(/\s+/g, "_"),
       threshold: Number(form.threshold),
     });
   };

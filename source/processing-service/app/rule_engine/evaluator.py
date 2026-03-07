@@ -37,8 +37,9 @@ def evaluate_rule(rule: AutomationRule, event: dict) -> bool:
     Returns:
         True if the rule's condition is satisfied by the event.
     """
-    # 1. Check sensor match
-    if rule.sensor_name != event.get("sensor_id"):
+    # 1. Check sensor match (normalize spaces → underscores)
+    rule_sensor = rule.sensor_name.replace(" ", "_")
+    if rule_sensor != event.get("sensor_id"):
         return False
 
     # 2. Find the matching measurement
