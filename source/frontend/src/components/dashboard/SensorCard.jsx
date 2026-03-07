@@ -1,55 +1,72 @@
-/**
- * SensorCard.jsx — Displays the latest reading for a single sensor.
- *
- * Shows sensor name, primary measurement value + unit, status badge,
- * and timestamp.
- */
-import React from 'react';
-import { Card, CardContent, Typography, Chip, Stack } from '@mui/material';
-import StatusBadge from './StatusBadge';
+import SensorChart from "./SensorChart";
 
-function SensorCard({ sensorId, event }) {
-  // Use the first measurement as the primary display value
-  const primary = event?.measurements?.[0];
+
+function SensorCard({ sensor, history = [] }) {
+
+  const measurement = sensor?.measurements?.[0];
+  const isTelemetry = sensor?.source_type?.includes("telemetry");
+  // needed for name extraction
+  const displayName =
+  sensor?.raw_topic?.split("/").pop() || sensor?.sensor_id;
+
+
+  const value = measurement?.value;
+  const unit = measurement?.unit ?? "";
+  const metric = measurement?.metric ?? "No data";
+  const status = sensor?.status ?? "unknown";
+  const timestamp = sensor?.timestamp ?? "";
 
   return (
-    <Card variant="outlined" sx={{ height: '100%' }}>
-      <CardContent>
-        {/* Sensor name */}
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          {sensorId}
-        </Typography>
+    <article className="rounded-[28px] border border-border bg-card/80 p-6 backdrop-blur-sm">
+      <div className="flex items-start justify-between gap-4">
+        <h3 className="text-xl font-semibold text-white">
+          {displayName}
+        </h3>
 
-        {/* Primary value */}
-        {primary ? (
-          <Stack direction="row" alignItems="baseline" spacing={1}>
-            <Typography variant="h4" component="span">
-              {typeof primary.value === 'number' ? primary.value.toFixed(2) : primary.value}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {primary.unit}
-            </Typography>
-          </Stack>
-        ) : (
-          <Typography variant="h4" color="text.secondary">—</Typography>
+        <span
+          className={`rounded-full border px-4 py-1.5 text-sm font-semibold uppercase ${
+            status === "warning"
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+          }`}
+        >
+          {status}
+        </span>
+      </div>
+
+      <div className="mt-8">
+        <div className="flex items-end gap-2">
+          <span className="text-4xl font-bold text-white">
+            {value !== undefined && value !== null ? value : "--"}
+          </span>
+
+          {unit && (
+            <span className="pb-1 text-sm text-muted-foreground">
+              {unit}
+            </span>
+          )}
+        </div>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          {metric}
+        </p>
+
+        {isTelemetry && (
+          <div className="mt-6">
+            <SensorChart
+              history={history}
+              metric={metric}
+              unit={unit}
+            />
+          </div>
         )}
+      </div>
 
-        {/* Additional measurements (if any) */}
-        {event?.measurements?.slice(1).map((m, i) => (
-          <Typography key={i} variant="body2" color="text.secondary">
-            {m.metric}: {m.value.toFixed(2)} {m.unit}
-          </Typography>
-        ))}
-
-        {/* Status + timestamp */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1}>
-          <StatusBadge status={event?.status} />
-          <Typography variant="caption" color="text.secondary">
-            {event?.timestamp ? new Date(event.timestamp).toLocaleTimeString() : ''}
-          </Typography>
-        </Stack>
-      </CardContent>
-    </Card>
+      <div className="mt-8 flex items-center justify-between border-t border-border pt-4 text-sm text-muted-foreground">
+        <span>Last Update</span>
+        <span>{new Date(timestamp).toLocaleTimeString()}</span>
+      </div>
+    </article>
   );
 }
 
