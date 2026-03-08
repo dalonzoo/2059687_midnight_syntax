@@ -119,7 +119,7 @@ function Dashboard() {
             subtitle="Key habitat metrics surfaced first for quick decisions."
           />
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 opacity-0 animate-fade-in-delay-3">
             {featured.map(([sensorId, event]) => (
               <FeaturedSensorCard
                 key={sensorId}
@@ -147,7 +147,7 @@ function Dashboard() {
           subtitle="Current readings from environmental and subsystem sensors."
         />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3 opacity-0 animate-fade-in-delay-4">
           {restSensors.map(([sensorId, event]) => (
             <SensorCard key={sensorId} sensor={event} history={history?.[sensorId]}/>
           ))}
@@ -160,7 +160,7 @@ function Dashboard() {
           subtitle="Telemetry data streams paired with live monitoring charts."
         />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3 opacity-0 animate-fade-in-delay-5">
           {telemetrySensors.map(([sensorId, event]) => (
             <SensorCard key={sensorId} sensor={event} history={history?.[sensorId]}/>
           ))}
