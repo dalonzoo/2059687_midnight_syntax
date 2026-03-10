@@ -17,6 +17,7 @@ function PowerComparison({ sensors }) {
 
     if (busKw == null || consumptionKw == null) return null;
 
+    // Calculating Power rules
     const totalSupplyKw = busKw + solarKw;
     const delta = totalSupplyKw - consumptionKw;
     const isDeficit = delta < 0;

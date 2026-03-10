@@ -34,7 +34,7 @@ function StateBadge({ state }) {
 
   return (
     <span
-      className={`inline-flex min-w-[64px] items-center justify-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide ${
         isOn
           ? "border-success/30 bg-success/10 text-success"
           : "border-warning/30 bg-warning/10 text-warning"
