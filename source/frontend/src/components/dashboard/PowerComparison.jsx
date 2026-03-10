@@ -43,6 +43,7 @@ function PowerComparison({ sensors }) {
       isImproving,
       isWorsening,
     };
+    // these dependencies would change value but despite that we're caching the result so we dont have to keep recalculating...
   }, [powerBus, powerConsumption, solarArray]);
 
   if (!stats) return null;
