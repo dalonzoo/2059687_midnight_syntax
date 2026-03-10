@@ -19,6 +19,7 @@ function Dashboard() {
   const { isConnected } = useWebSocket();
 
   const { sensors, history, loading } = useSensorData();
+  
   // Debugging
   // console.log("SENSORS OBJECT:", sensors);
   // console.log("FIRST SENSOR:", Object.values(sensors)[0]);

@@ -15,6 +15,8 @@ function useSensorData() {
 
   const lastProcessed = useRef(null);
 
+  // Rest Answers what is the latest state right now?
+
   const fetchInitialState = useCallback(async () => {
     try {
       const res = await api.get("/api/state");
