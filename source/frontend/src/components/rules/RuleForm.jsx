@@ -1,11 +1,26 @@
 import { useEffect, useState } from "react";
 
 const OPERATORS = ["<", "<=", "=", ">", ">="];
+
+const SENSORS = [
+  "",
+  "greenhouse_temperature",
+  "entrance_humidity",
+  "co2_hall"
+]
+
 const ACTUATORS = [
   "cooling_fan",
   "entrance_humidifier",
   "hall_ventilation",
   "habitat_heater",
+];
+
+const METRICS = [
+  "",
+  "temperature_c",
+  "co2_ppm",
+  "humidity_pct",
 ];
 
 const UNITS = [
@@ -87,17 +102,17 @@ function RuleForm({ open, rule, onSave, onClose }) {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Input
+            <Select
               label="Sensor Name"
               value={form.sensor_name}
               onChange={handleChange("sensor_name")}
-              placeholder="e.g. greenhouse_temperature"
+              options={SENSORS}
             />
-            <Input
+            <Select
               label="Metric"
               value={form.metric}
               onChange={handleChange("metric")}
-              placeholder="e.g. temperature_c"
+              options={METRICS}
             />
           </div>
 
@@ -196,7 +211,7 @@ function Select({ label, options, formatOption, ...props }) {
       >
         {options.map((option) => (
           <option key={option} value={option} className="bg-card text-white">
-            {formatOption ? formatOption(option) : option || "No Unit"}
+            {formatOption ? formatOption(option) : option || "Select"}
           </option>
         ))}
       </select>
