@@ -1,8 +1,8 @@
 # Mars Habitat Automation Platform
 
-> **Award-winning distributed IoT platform for Mars habitat automation and real-time monitoring**
+> **Distributed IoT platform for Mars habitat automation and real-time monitoring**
 
-Welcome to the **Mars Habitat Automation Platform**—a production-grade event-driven microservices system for managing telemetry, environmental controls, and automation in a simulated Mars habitat. Built with modern cloud-native technologies, this project demonstrates enterprise-level distributed systems architecture.
+Welcome to the **Mars Habitat Automation Platform**, a production-grade event-driven microservices system for managing telemetry, environmental controls, and automation in a simulated Mars habitat. Built with modern cloud-native technologies, this project demonstrates enterprise-level distributed systems architecture.
 
 ---
 
