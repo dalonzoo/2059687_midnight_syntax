@@ -14,7 +14,7 @@ SIMULATOR_URL: str = os.getenv("SIMULATOR_URL", "http://localhost:8080")
 # Kafka broker address (comma-separated if multiple)
 KAFKA_BOOTSTRAP_SERVERS: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
-# How often to poll REST sensors (seconds)
+# How often to poll REST sensors (seconds)  
 POLL_INTERVAL_SECONDS: int = int(os.getenv("POLL_INTERVAL_SECONDS", "5"))
 
 # How often to re-discover sensors/topics from the simulator (seconds)

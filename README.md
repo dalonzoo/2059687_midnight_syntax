@@ -764,7 +764,7 @@ POSTGRES_DB=mars_rules
 
 ## Team & Credits
 
-**Team Members:** 3 postgraduate students, Lab of Advanced Programming, University of [Institution]
+**Team Members:** 3 postgraduate students, Lab of Advanced Programming, University of Rome "La Sapienza"
 
 **Duration:** 5 days (March 5–10, 2026)
 
